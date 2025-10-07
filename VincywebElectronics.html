@@ -1,0 +1,170 @@
+<!--
+Single-file Online Store for Electronic Gadgets
+Features implemented (front-end only):
+- Product listing (sample electronics)
+- Search and filters (by name and price range)
+- Add to cart, view cart, remove items
+- Simulated user signup/login (localStorage)
+- Simple admin dashboard (password-protected) to add products (stored in localStorage)
+- Checkout form that triggers a SIMULATED M-PESA STK Push (front-end placeholder)
+
+NOTES for real deployment / M-PESA integration:
+- Real M-Pesa (Safaricom Daraja) requires server-side credentials and endpoint to request an STK push.
+- Replace the `simulateMpesaStkPush()` function with a call to your backend API which performs the Daraja request
+  using your consumer key/secret and Lipa Na M-Pesa credentials.
+- Never embed your API credentials in client-side code.
+
+Save this file and open it in the browser (double-click the .html file).
+-->
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ElectroMart — Online Gadgets Store</title>
+  <link rel=stylesheet href="VincywebElectronics.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔌</text></svg>"> 
+</head>
+<body>
+  <header>
+    <h1>ElectroMart — Gadgets & Accessories</h1>
+    <div style="display:flex;gap:10px;align-items:center">
+      <div id="user-area"></div>
+      <button class="btn" id="open-cart">Cart (<span id="cart-count">0</span>)</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="grid">
+      <aside class="sidebar">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <strong>Filters</strong>
+          <button class="btn" id="btn-admin">Admin</button>
+        </div>
+        <div class="search">
+          <input id="search" placeholder="Search gadgets...">
+          <button class="btn" id="search-btn">Go</button>
+        </div>
+        <div style="margin-bottom:10px">
+          <label>Price range</label>
+          <select id="price-filter">
+            <option value="any">Any</option>
+            <option value="0-5000">Under KSh 5,000</option>
+            <option value="5000-20000">KSh 5,000 - 20,000</option>
+            <option value="20000-999999">Above KSh 20,000</option>
+          </select>
+        </div>
+        <div style="margin-bottom:10px">
+          <label>Sort by</label>
+          <select id="sort-by">
+            <option value="default">Featured</option>
+            <option value="price-asc">Price: Low → High</option>
+            <option value="price-desc">Price: High → Low</option>
+          </select>
+        </div>
+        <div style="margin-top:14px">
+          <div class="muted">Signed-in as:</div>
+          <div id="signed-user" style="font-weight:600;margin-top:6px">Guest</div>
+        </div>
+
+        <hr style="margin:12px 0;border:none;border-top:1px dashed #eef2ff">
+        <div class="small muted">Tip: Use the admin button to add sample products (admin password: <code>admin123</code>).</div>
+      </aside>
+
+      <main>
+        <div class="toolbar">
+          <div>
+            <strong>All Gadgets</strong>
+            <div class="small muted">Quality electronics — headphones, phones, chargers and more.</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn" id="btn-login">Login / Signup</button>
+            <input id="quick-filter" placeholder="Quick filter (e.g. headphone)" style="padding:8px;border-radius:8px;border:1px solid #e6e9ef">
+          </div>
+        </div>
+
+        <div class="products" id="products"></div>
+      </main>
+    </div>
+
+    <footer>
+      Built with ❤️ — ElectroMart demo. For real M-Pesa payments integrate Safaricom Daraja API on the server.
+    </footer>
+  </div>
+
+  <!-- Cart drawer -->
+  <div class="cart-drawer" id="cart-drawer" style="display:none">
+    <div class="cart-header">
+      <div><strong>Your Cart</strong></div>
+      <div><button id="close-cart" class="btn">Close</button></div>
+    </div>
+    <div class="cart-body" id="cart-body"></div>
+    <div class="cart-footer">
+      <div style="display:flex;justify-content:space-between"><div class="muted">Subtotal</div><div id="cart-subtotal">KSh 0</div></div>
+      <button class="btn" id="checkout-btn">Checkout via M-Pesa</button>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <div class="modal" id="modal-login">
+    <div class="modal-card">
+      <h3 id="modal-title">Login / Signup</h3>
+      <div id="login-forms">
+        <label>Email or Phone</label>
+        <input type="text" id="login-identity" placeholder="e.g. 0712345678 or you@example.com">
+        <label>Password</label>
+        <input type="password" id="login-password">
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn" id="do-login">Login</button>
+          <button class="btn" id="do-signup">Signup</button>
+          <button class="btn" id="close-login">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-checkout">
+    <div class="modal-card">
+      <h3>Checkout — M-Pesa Payment</h3>
+      <form id="checkout-form">
+        <label>Full name</label>
+        <input type="text" id="cust-name" required>
+        <label>Phone (07XXXXXXXX)</label>
+        <input type="tel" id="cust-phone" placeholder="0712345678" required>
+        <label>Delivery address</label>
+        <input type="text" id="cust-address" required>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+          <button class="btn" type="submit">Pay (Simulate STK Push)</button>
+          <button class="btn" type="button" id="close-checkout">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-admin">
+    <div class="modal-card">
+      <h3>Admin — Add Product</h3>
+      <label>Admin password</label>
+      <input type="password" id="admin-pass" placeholder="password">
+      <div id="admin-area" style="display:none">
+        <label>Product name</label>
+        <input type="text" id="admin-name">
+        <label>Price (KSh)</label>
+        <input type="text" id="admin-price">
+        <label>Image URL (optional)</label>
+        <input type="text" id="admin-img">
+        <label>Short description</label>
+        <input type="text" id="admin-desc">
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+          <button class="btn" id="add-product">Add Product</button>
+          <button class="btn" id="close-admin">Close</button>
+        </div>
+      </div>
+      <div id="admin-msg" class="muted small" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <script src="VincywebElectronics.js"></script>
+</body>
+</html>
